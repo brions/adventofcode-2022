@@ -49,7 +49,18 @@ class Names(Enum):
     win = 'Win'
     draw = 'Draw'
     loss = 'Loss'
+    
+class DesiredOutcome(Enum):
+    X = 'Loss'
+    Y = 'Draw'
+    Z = 'Win'
 
+# given: desired outcome (enum), look up the desired play (value), by the opponent's play (key)
+class DesiredPlay(Enum):
+    Win = {Names.A.value:Names.B.value, Names.B.value:Names.C.value, Names.C.value:Names.A.value}
+    Loss = {Names.A.value:Names.C.value, Names.B.value:Names.A.value, Names.C.value:Names.B.value}
+    Draw = {Names.A.value:Names.A.value, Names.B.value:Names.B.value, Names.C.value:Names.C.value}
+    
 class Token:
     def __init__(self, symbol):
         self.symbol = symbol
@@ -138,3 +149,23 @@ totalScore = 0
 # (lambda round: round.outcome.score)
 # Then we'll reduce that list of scores down to a single score by adding each element together (lambda x,y: x + y)
 print(f"Total score: {reduce(lambda x, y: x + y, list(map(lambda round: round.outcome.score, rounds)))}")
+
+# oops! second column isn't a countermove, it's the desired outcome (X -> lose, Y -> draw, Z -> win), so assuming we select the desired outcome, what's our total score?
+
+# run through each round, ignoring score and produce a new list of scores based on the new definition of 'countermove'
+def manipulate_score(round: Round):
+    #print(f"round: {round}, desiredOutcome: {DesiredOutcome[round.countermove.symbol].value}")
+
+    # we want the score of the _desired_ outcome, not the original meaning of 'countermove'
+    outcomeValue = Scoring[DesiredOutcome[round.countermove.symbol].value].value
+    #print(f'desired outcome: {DesiredOutcome[round.countermove.symbol].value}')
+    
+    # don't forget we also need the value of the desired play to acheive the outcome - inverse of the round score
+    desiredPlay = DesiredPlay[DesiredOutcome[round.countermove.symbol].value].value[round.move.name]
+
+    #print(f'desiredPlay: {str(desiredPlay)}')
+    #print(f'desiredPlay score: {Scoring[desiredPlay].value}')
+    return outcomeValue + Scoring[desiredPlay].value
+    
+#print(f'list of manipulated scores: {list(map(lambda round: manipulate_score(round), rounds[0:2]))}')
+print(f"Total score (manipulating outcomes): {reduce(lambda x, y: x + y, list(map(lambda round: manipulate_score(round), rounds)))}")
