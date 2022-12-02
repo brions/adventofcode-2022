@@ -6,6 +6,7 @@
 # A Y
 # B X
 # C Z
+#
 # Where each line is two symbols sparated by a space and each symbol represents a move:
 # A - Rock
 # B - Paper
