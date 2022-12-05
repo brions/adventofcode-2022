@@ -9,13 +9,13 @@
 #
 # To load this input we'll do the following:
 # 1. read each line and determine:
-#   a. if it contains [], add the line to a stack (the top line will be on the bottom of the stack)
-#   b. if it contains only numbers - split them and find the highest number (total number of columns/stacks)
+#   a. if it contains [], parse the line chunking it into fields of size 4 (each column is 4 chars wide - e.g. `[A] `) and add them to a stack keyed by the
+#      field position in a map.  So if the first column was `[A] ` and the second was `[B] `, then the map would contain: `{0: ['A'], 1: ['B']`
+#   b. if it contains only numbers - skip it because we already know how many columns we have by how many keys we added to the map
 #   c. if it's a blank line stop line-by-line processing and load the rest of the file as instructions
-# 2. create a map of stacks (ordered lists which can only have data pushed/popped from them) with one entry for every column/crate stack
-# 3. For each line pushed onto the input stack, pop them off one at a time, push each value into the correct stack in the map based on position key (column)
+# 2. for each stack in the map (all the values of the map) reverse the queue order (so `['A', 'Z']`` becomes `['Z', 'A']`QNNTGTPFN)
 # 
-# This will result in a single map, keyed by crate stack column, with one stack per key of the data in the correct order (first read from input = top of stack)
+# This will result in a single map, keyed by crate stack column, with one stack per key of the data in the correct order (first read from input = bottom of stack)
 #
 # Next we'll run through the instructions parsing `move X from A to B` as `howMany` to pop/push from stack key `A` to stack key `B`
 # When all the instructions are executed, peeking (or popping) the top of each stack for every key in the map (in order) will result in the "word"
