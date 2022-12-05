@@ -16,12 +16,17 @@ class Assignment:
             return True
         return False
 
+    def overlaps(self, other: "Assignment"):
+        if (self.lower > other.upper or self.upper < other.lower):
+            return False
+        return True
         
 
 # all the assignments
 lines = list(map(lambda line: line.strip(), open('input.txt', 'r')))
 
 supersetPairs = 0
+overlappingPairs = 0
 
 for line in lines:
     assignments = list(list(map(int, x.split('-'))) for x in (line.split(',')))
@@ -34,5 +39,12 @@ for line in lines:
     if objects[0].contains(objects[1]) or objects[1].contains(objects[0]):
         supersetPairs += 1        
         print(f'===> found a superset {objects}')
+        # debugging
+        # continue
+        
+    if objects[0].overlaps(objects[1] or objects[1].overlaps(objects[0])):
+        overlappingPairs += 1
+        print(f'---> found overlapping pairs {objects}')
                     
 print(f'number of superset pairs: {supersetPairs}')
+print(f'numbet of overlapping pairs: {overlappingPairs}')
