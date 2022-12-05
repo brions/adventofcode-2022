@@ -23,9 +23,12 @@
 
 from collections import deque
 import re
+import copy
+import itertools
 
 # create a map of stacks
 mapOfStacks = {}
+mapOfStacks9001 = {}
 
 # open the file for reading, but only read one line at a time until we get to the start of the instruction data
 fh = open('input.txt', 'r')
@@ -59,8 +62,14 @@ for stack in mapOfStacks.values():
     
 # print(f'mapOfStacks (reversed): {mapOfStacks}')
 
+# for part 2 we need a copy of the map of stacks that is unmodified
+mapOfStacks9001 = copy.deepcopy(mapOfStacks)
+
 # the current line is the number of columns, but since we know that, read one more line before we start looping through the instructions
 line = fh.readline()
+
+# read all the instructions into an array so we can replay them later for part 2
+lines = list(map(lambda l: l.strip(), fh.readlines()))
 
 # move howMany crates, one at a time using pop/append from src stack to dest stack
 def moveCrates(howMany: int, src: int, dest: int):
@@ -68,12 +77,17 @@ def moveCrates(howMany: int, src: int, dest: int):
         mapOfStacks[dest].append(mapOfStacks[src].pop())
         # print(f'mapOfStacks: {mapOfStacks}')
 
-# start looping through the instructions and modifying the stacks as instructed
-for line in map(lambda l: l.strip(), fh.readlines()):
-    # print(f'instruction: {line}')
-    instructions = re.search(r"move (\d+) from (\d+) to (\d+)", line)
-    if len(instructions.groups()) == 3:
-        moveCrates(int(instructions.group(1)), int(instructions.group(2))-1, int(instructions.group(3))-1)
+# move the processing of instructions into a function and just pass in the function you want to use for the instructions
+# the `moveFunc` must take three arguments: howMany, src, dest
+def processInstructions(moveFunc):
+    # start looping through the instructions and modifying the stacks as instructed
+    for line in lines:
+        # print(f'instruction: {line}')
+        instructions = re.search(r"move (\d+) from (\d+) to (\d+)", line)
+        if len(instructions.groups()) == 3:
+            moveFunc(int(instructions.group(1)), int(instructions.group(2))-1, int(instructions.group(3))-1)
+    
+processInstructions(moveCrates)
     
 # print(f'mapOfStacks: {mapOfStacks}')
 
@@ -83,6 +97,37 @@ keys = list(mapOfStacks.keys())
 keys.sort()
 # print(f'mapOfStacks.keys(): {keys}')
 for k in keys:
-    word = word + mapOfStacks[k][-1]
+    word = word + (mapOfStacks[k][-1] if len(mapOfStacks[k]) > 0 else '')
     
 print(f'word: {word}')
+
+### part 2 - moving multiple crates at once
+
+# move howMany crates, all at once maintaining order from src stack to dest stack
+def moveCrates9001(howMany: int, src: int, dest: int):
+    # print(f'moving...{howMany}')
+    # print(f'src: {mapOfStacks9001[src]}')
+    # print(f'dest: {mapOfStacks9001[dest]}')
+    srcLen = len(mapOfStacks9001[src])
+    srcList = list(mapOfStacks9001[src])
+    destList = list(mapOfStacks9001[dest])
+    newSrc, moving = srcList[0:(srcLen-howMany)], srcList[-howMany:]
+    mapOfStacks9001[dest].extend(moving)
+    mapOfStacks9001[src] = deque(newSrc)
+    # print(f'dest (after): {mapOfStacks9001[dest]}')
+        
+# print(f'mapOfStacks9001 (before): {mapOfStacks9001}')
+
+processInstructions(moveCrates9001)
+
+# print(f'mapOfStacks9001 (after): {mapOfStacks9001}')
+
+# read the top of every stack
+word2 = ''
+keys = list(mapOfStacks9001.keys())
+keys.sort()
+# print(f'mapOfStacks.keys(): {keys}')
+for k in keys:
+    word2 = word2 + (mapOfStacks9001[k][-1] if len(mapOfStacks9001[k]) > 0 else '')
+    
+print(f'word2: {word2}')
