@@ -91,20 +91,25 @@ class DirOrFile:
             myPath += '/'
         return myPath
 
+    # returns a sorted list of child nodes, if any
     def getChildNodes(self):
-        return self.children.values()
+        return sorted(self.children.values())
     
     def getParent(self) -> "DirOrFile":
         return self.parent
 
-validCommands = ['$ cd', '$ ls']
+# this pattern is reused for command execution
 dirPattern = r'(?:dir|cd) (.*)'
-filePattern = r'(\d+) (.*)'
-treeRoot = None
+treeRoot: DirOrFile
 
-def buildDirTree():
+# construct a tree from the input file
+def buildDirTree(treeFile: str) -> DirOrFile:
+    validCommands = ['$ cd', '$ ls']
+    filePattern = r'(\d+) (.*)'
     global treeRoot
-    fh = open('input.txt', 'r')
+    global dirPattern
+    
+    fh = open(treeFile, 'r')
     # create root node in tree
     treeRoot = DirOrFile('', 0, True)
     currentDir = treeRoot
@@ -136,8 +141,10 @@ def buildDirTree():
                     currentDir.addChild(DirOrFile(fileName, int(fileSize)))
                 else:
                     raise Exception(f'File listing invalid: {{{line}}}')
+    return treeRoot
 
 def executeCommand(currentDir: DirOrFile, cmd: str):
+    global treeRoot
     if cmd.startswith('$ cd'):
         dirName = re.search(dirPattern, cmd).group(1)
         # change directory and return the new directory if the dir is not `/`
@@ -154,40 +161,41 @@ def executeCommand(currentDir: DirOrFile, cmd: str):
     else:
         return currentDir
 
-### Part 1 ###    
-buildDirTree()
-
+### Part 1 ###
+# build the tree
+treeFile = 'input.txt'
+treeRoot = buildDirTree(treeFile)
 print(f'Directory Tree\n{treeRoot.printTree()}')
 
-# given a base directory and a maximum file size, find all the files under the max size and return
-# the map of path -> size
-def findBySize(baseDir: DirOrFile, maxSize: int) -> dict:
-    foundMap = dict()
+# # given a base directory and a maximum file size, find all the files under the max size and return
+# # the map of path -> size
+# def findBySize(baseDir: DirOrFile, maxSize: int) -> dict:
+#     foundMap = dict()
         
-    if baseDir == None or maxSize == None:
-        return foundMap
+#     if baseDir == None or maxSize == None:
+#         return foundMap
     
-    node: DirOrFile
-    for node in baseDir.getChildNodes():
-        if node.isDir:
-            dirResult = findBySize(node, maxSize)
-            if dirResult:
-                foundMap.update(dirResult)
-        else:
-            if node.size <= maxSize:
-                foundMap[node] = node.size
+#     node: DirOrFile
+#     for node in baseDir.getChildNodes():
+#         if node.isDir:
+#             dirResult = findBySize(node, maxSize)
+#             if dirResult:
+#                 foundMap.update(dirResult)
+#         else:
+#             if node.size <= maxSize:
+#                 foundMap[node] = node.size
                     
-    return foundMap
+#     return foundMap
     
-# this will be the map of all files found (starting at the root) that are <= 100,000 size keyed by node (which are sortable, comparable)
-foundMap = findBySize(treeRoot, 100000)
+# # this will be the map of all files found (starting at the root) that are <= 100,000 size keyed by node (which are sortable, comparable)
+# foundMap = findBySize(treeRoot, 100000)
 
-print('foundMap:\n', end='')
-node: DirOrFile
-for node, size in foundMap.items():
-    print(f'\t{node.getPath()} {size}')
+# print('foundMap:\n', end='')
+# node: DirOrFile
+# for node, size in foundMap.items():
+#     print(f'\t{node.getPath()} {size}')
 
-# for a given node, total all the files in the directory recursively
+# for a given node, total all the files sizes in the hierarchy recursively
 def totalForNode(node: DirOrFile) -> int:
     nodeTotal = node.size
     if (node.isDir):
@@ -199,52 +207,139 @@ def totalForNode(node: DirOrFile) -> int:
 validNodes = dict()
 rejected = dict()
 
-for node, size in foundMap.items():
+def pick(node: DirOrFile, total: int):
+    # only pick if we haven't picked it before and it's not already been rejected
+    if not validNodes.get(node) and not rejected.get(pick):
+        print(f'==> picking {node.getPath()} ({total})')
+        validNodes[node] = total
+
+def reject(node: DirOrFile, total: int):
+    print(f'### rejecting {node.getPath()} because it\'s too big {total}')
+    rejected[node] = True
+                
+def ignore(node: DirOrFile, reason: str='(same as recommended)'):
+    print(f'<-- ignoring {node.getPath()} {reason}')
+
+def recommend(node: DirOrFile, total: int):
+    print(f'==> recommending {node.getPath()} ({total})')
     
-    # assume this node's parent is the one we're going to add, then check to see if its 
-    # parent's size is the same, if so, then we'll consider that parent to add instead
-    nextParent = node.getParent()
-    toPick: DirOrFile = None
-    pickTotal: int = 0
+# for a given node (directory or file) return the recommended node
+# optionally provide a recommended node to compare against
+# nodes that should not be considered will return None (such as ignored files)
+def consider(node: DirOrFile, recommended: DirOrFile=None, rTotal: int=0, includeFiles = False) -> DirOrFile:
 
-    # keep going until we reach the root (parent == None) or we find a parent with a different total
-    while(nextParent):
-        # don't bother if we've already added this parent from another path, or it's been rejected already
-        if not validNodes.get(nextParent) and not rejected.get(nextParent):
-            print(f'...considering {nextParent.getPath()}')
-            # the parent's total to compare to the 'toPick' total
-            nextTotal = totalForNode(nextParent)
-            # print(f'<nextParent totalForNode "{nextParent.getPath()}": {nextTotal}>')
+    # don't consider files unless requested
+    if not node.isDir and not includeFiles:
+        ignore(node, reason='(not a directory)')
+        return node
+    
+    total = totalForNode(node)
+    print(f'...considering {node.getPath()} ({total})', end='')
+    print(f' against recommended {recommended.getPath()} ({rTotal})') if recommended else print('')
 
-            # if we don't have a candidate yet, pick this one
-            if not toPick:
-                toPick = nextParent
-                pickTotal = nextTotal
+    if total > 100000:
+        reject(node, total)
 
+    # if we don't already have a recommendation and this is good, recommend it
+    if not recommended and total <= 100000 and total > 0:
+        recommend(node, total)
+        recommended = node
+        rTotal = total
+
+    if node.getChildNodes():
+        newRecommended: DirOrFile = None
+        nTotal = 0
+        for child in node.getChildNodes():
+            next = consider(child, newRecommended or recommended, 
+                            nTotal or rTotal, includeFiles)
+            if not next or (not next.isDir and not includeFiles):
+                continue
+            nextTotal = totalForNode(next)
+            
+            # consider this candidate against the recommended and limits
             if nextTotal > 100000:
-                # skip this parent from now on - it's too big
-                rejected[nextParent] = True
-                print(f'### rejecting {nextParent.getPath()} because it\'s too big {nextTotal}')
-
-            if pickTotal == nextTotal and nextTotal <= 100000:
-                # print(f'...candidate changed to: {nextParent.getPath()} ({nextTotal})')
-                toPick = nextParent
-            elif pickTotal != nextTotal:
-                if not rejected.get(toPick):
-                    print(f'==> picking {toPick.getPath()} ({pickTotal})')
-                    validNodes[toPick] = pickTotal
-                    toPick = None
-                    pickTotal = 0
-                break
-        elif not validNodes.get(toPick) and rejected.get(nextParent):
-            if toPick:
-                toPick = None
-                pickTotal = 0
-            break
+                reject(next, nextTotal)
+                continue
+            
+            if next != node and nextTotal == total and total > 0:
+                ignore(next)
+                continue
+            elif next == node and nextTotal > 0:
+                pick(next, nextTotal)
+                continue
+            elif nextTotal < rTotal and nextTotal > 0:
+                recommend(next, nextTotal)
+                newRecommended = next
+                nTotal = nextTotal
+                continue
+            else:
+                # don't consider this directory
+                ignore(next, reason='(Not a dir)')
+                continue
         
-        # if nextParent.getParent() == None:
-            # print(f"We've reached the root: (node: {nextParent.getPath()})")
-        nextParent = nextParent.getParent()
+            
+    # all things being equal, if this and its parent are the same, pick this
+    if recommended != node and rTotal == total and total > 0:
+        recommend(node, total)
+        return recommended
+    elif recommended == node:
+        pick(recommended, rTotal)
+        return None
+    elif total < rTotal:
+        pick(node, total)
+        if recommended:
+            recommend(recommended, rTotal)
+        return recommended or None
+    
+    # if we got here with a recommendation, pick it
+    if recommended:
+        pick(recommended, rTotal)
+        
+    # return node if it wasn't rejected
+    return recommended
+    
+
+# perform a breadth-first traversal of the root node and collect directories
+# that are <= 100000 size
+for rootNode in treeRoot.getChildNodes():
+    consider(rootNode)
+        
+# keep going until we reach the root (parent == None) or we find a parent with a different total
+# while(nextParent):
+#     # don't bother if we've already added this parent from another path, or it's been rejected already
+#     if not validNodes.get(nextParent) and not rejected.get(nextParent):
+#         print(f'...considering {nextParent.getPath()}')
+#         # the parent's total to compare to the 'toPick' total
+#         nextTotal = totalForNode(nextParent)
+#         # print(f'<nextParent totalForNode "{nextParent.getPath()}": {nextTotal}>')
+
+#         # if we don't have a candidate yet, pick this one
+#         if not toPick:
+#             toPick = nextParent
+#             pickTotal = nextTotal
+
+#         if nextTotal > 100000:
+#             # skip this parent from now on - it's too big
+
+#         if pickTotal == nextTotal and nextTotal <= 100000:
+#             # print(f'...candidate changed to: {nextParent.getPath()} ({nextTotal})')
+#             toPick = nextParent
+#         elif pickTotal != nextTotal:
+#             if not rejected.get(toPick):
+#                 print(f'==> picking {toPick.getPath()} ({pickTotal})')
+#                 validNodes[toPick] = pickTotal
+#                 toPick = None
+#                 pickTotal = 0
+#             break
+#     elif not validNodes.get(toPick) and rejected.get(nextParent):
+#         if toPick:
+#             toPick = None
+#             pickTotal = 0
+#         break
+    
+#     # if nextParent.getParent() == None:
+#         # print(f"We've reached the root: (node: {nextParent.getPath()})")
+#     nextParent = nextParent.getParent()
             
 print('validNodes:\n', end='')
 for node, size in validNodes.items():
