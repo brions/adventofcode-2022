@@ -1,0 +1,3 @@
+input.txt
+row 1: all visible
+row 2: 11 visible (5 left, 6 right), 3x 7 highest
