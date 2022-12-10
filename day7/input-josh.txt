@@ -1,0 +1,10 @@
+$ cd /
+$ ls
+100000000000 x
+dir a
+$ cd a
+$ ls
+dir b
+$ cd b
+$ ls
+66 c

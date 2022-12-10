@@ -61,9 +61,6 @@ class DirOrFile:
             for child in self.getChildNodes():
                 displayStr += child.printTree()
         return displayStr
-
-    # def isDir(self) -> bool:
-    #     return self.isDir
             
     def addChild(self, node: "DirOrFile") -> bool:
         if not self.isDir:
@@ -167,34 +164,6 @@ treeFile = 'input.txt'
 treeRoot = buildDirTree(treeFile)
 print(f'Directory Tree\n{treeRoot.printTree()}')
 
-# # given a base directory and a maximum file size, find all the files under the max size and return
-# # the map of path -> size
-# def findBySize(baseDir: DirOrFile, maxSize: int) -> dict:
-#     foundMap = dict()
-        
-#     if baseDir == None or maxSize == None:
-#         return foundMap
-    
-#     node: DirOrFile
-#     for node in baseDir.getChildNodes():
-#         if node.isDir:
-#             dirResult = findBySize(node, maxSize)
-#             if dirResult:
-#                 foundMap.update(dirResult)
-#         else:
-#             if node.size <= maxSize:
-#                 foundMap[node] = node.size
-                    
-#     return foundMap
-    
-# # this will be the map of all files found (starting at the root) that are <= 100,000 size keyed by node (which are sortable, comparable)
-# foundMap = findBySize(treeRoot, 100000)
-
-# print('foundMap:\n', end='')
-# node: DirOrFile
-# for node, size in foundMap.items():
-#     print(f'\t{node.getPath()} {size}')
-
 # for a given node, total all the files sizes in the hierarchy recursively
 def totalForNode(node: DirOrFile) -> int:
     nodeTotal = node.size
@@ -214,137 +183,105 @@ def pick(node: DirOrFile, total: int):
         validNodes[node] = total
 
 def reject(node: DirOrFile, total: int):
-    print(f'### rejecting {node.getPath()} because it\'s too big {total}')
+    print(f'### rejecting {node.getPath()} ({total}) because it\'s out of bounds')
     rejected[node] = True
                 
 def ignore(node: DirOrFile, reason: str='(same as recommended)'):
-    print(f'<-- ignoring {node.getPath()} {reason}')
+    # print(f'<-- ignoring {node.getPath()} {reason}')
+    pass
 
-def recommend(node: DirOrFile, total: int):
-    print(f'==> recommending {node.getPath()} ({total})')
-    
-# for a given node (directory or file) return the recommended node
-# optionally provide a recommended node to compare against
+# for a given node (directory or file) return the picked node
 # nodes that should not be considered will return None (such as ignored files)
-def consider(node: DirOrFile, recommended: DirOrFile=None, rTotal: int=0, includeFiles = False) -> DirOrFile:
+def consider(node: DirOrFile, targetSize=100000, sizeIsMax = True) -> DirOrFile:
 
-    # don't consider files unless requested
-    if not node.isDir and not includeFiles:
+    # don't consider files
+    if not node.isDir:
         ignore(node, reason='(not a directory)')
-        return node
+        return None
     
     total = totalForNode(node)
-    print(f'...considering {node.getPath()} ({total})', end='')
-    print(f' against recommended {recommended.getPath()} ({rTotal})') if recommended else print('')
-
-    if total > 100000:
+    wasRejected = False
+    
+    if sizeIsMax and total > targetSize:
         reject(node, total)
-
-    # if we don't already have a recommendation and this is good, recommend it
-    if not recommended and total <= 100000 and total > 0:
-        recommend(node, total)
-        recommended = node
-        rTotal = total
+        wasRejected = True
+    elif not sizeIsMax and total < targetSize:
+        reject(node, total)
+        wasRejected = True
 
     if node.getChildNodes():
-        newRecommended: DirOrFile = None
-        nTotal = 0
         for child in node.getChildNodes():
-            next = consider(child, newRecommended or recommended, 
-                            nTotal or rTotal, includeFiles)
-            if not next or (not next.isDir and not includeFiles):
+            next = consider(child, targetSize, sizeIsMax)
+            if not next:
                 continue
             nextTotal = totalForNode(next)
             
             # consider this candidate against the recommended and limits
-            if nextTotal > 100000:
+            if sizeIsMax and nextTotal > targetSize:
+                reject(next, nextTotal)
+                continue
+            elif not sizeIsMax and nextTotal < targetSize:
                 reject(next, nextTotal)
                 continue
             
-            if next != node and nextTotal == total and total > 0:
-                ignore(next)
-                continue
-            elif next == node and nextTotal > 0:
+            if (sizeIsMax and nextTotal > 0) or not sizeIsMax:
                 pick(next, nextTotal)
-                continue
-            elif nextTotal < rTotal and nextTotal > 0:
-                recommend(next, nextTotal)
-                newRecommended = next
-                nTotal = nextTotal
-                continue
-            else:
-                # don't consider this directory
-                ignore(next, reason='(Not a dir)')
-                continue
         
-            
-    # all things being equal, if this and its parent are the same, pick this
-    if recommended != node and rTotal == total and total > 0:
-        recommend(node, total)
-        return recommended
-    elif recommended == node:
-        pick(recommended, rTotal)
-        return None
-    elif total < rTotal:
+    if not wasRejected:
         pick(node, total)
-        if recommended:
-            recommend(recommended, rTotal)
-        return recommended or None
-    
-    # if we got here with a recommendation, pick it
-    if recommended:
-        pick(recommended, rTotal)
         
     # return node if it wasn't rejected
-    return recommended
+    return None if wasRejected else node
     
 
 # perform a breadth-first traversal of the root node and collect directories
 # that are <= 100000 size
-for rootNode in treeRoot.getChildNodes():
-    consider(rootNode)
-        
-# keep going until we reach the root (parent == None) or we find a parent with a different total
-# while(nextParent):
-#     # don't bother if we've already added this parent from another path, or it's been rejected already
-#     if not validNodes.get(nextParent) and not rejected.get(nextParent):
-#         print(f'...considering {nextParent.getPath()}')
-#         # the parent's total to compare to the 'toPick' total
-#         nextTotal = totalForNode(nextParent)
-#         # print(f'<nextParent totalForNode "{nextParent.getPath()}": {nextTotal}>')
+consider(treeRoot)
 
-#         # if we don't have a candidate yet, pick this one
-#         if not toPick:
-#             toPick = nextParent
-#             pickTotal = nextTotal
+def debugValidNodes():            
+    print('validNodes:\n', end='')
+    for node, size in validNodes.items():
+        print(f'\t{node} {size}'.rstrip())
 
-#         if nextTotal > 100000:
-#             # skip this parent from now on - it's too big
-
-#         if pickTotal == nextTotal and nextTotal <= 100000:
-#             # print(f'...candidate changed to: {nextParent.getPath()} ({nextTotal})')
-#             toPick = nextParent
-#         elif pickTotal != nextTotal:
-#             if not rejected.get(toPick):
-#                 print(f'==> picking {toPick.getPath()} ({pickTotal})')
-#                 validNodes[toPick] = pickTotal
-#                 toPick = None
-#                 pickTotal = 0
-#             break
-#     elif not validNodes.get(toPick) and rejected.get(nextParent):
-#         if toPick:
-#             toPick = None
-#             pickTotal = 0
-#         break
-    
-#     # if nextParent.getParent() == None:
-#         # print(f"We've reached the root: (node: {nextParent.getPath()})")
-#     nextParent = nextParent.getParent()
-            
-print('validNodes:\n', end='')
-for node, size in validNodes.items():
-    print(f'\t{node} {size}'.rstrip())
-
+debugValidNodes()
 
 sumTotal = sum(value for value in validNodes.values())
 print(f'sum: {sumTotal}')
+
+## Part 2: The directory death hunt
+# Find the smallest directory that can be deleted that will free up sufficient space to allow the
+# 30Mb update to be installed.
+# Calculate the necessary sized directory to delete by subtracting the total amount of used storage
+# you have (/ size) from the total amount storage available (70Mb) in order to find out how
+# large of a directory you need to delete to free up 30MB
+##
+
+TOTAL_CAPACITY = 70000000
+REQUIRED_FREE_SPACE = 30000000
+
+totalUsed = totalForNode(treeRoot)
+
+# clean the validNodes!!
+validNodes.clear()
+
+minRequiredSpace = REQUIRED_FREE_SPACE - (TOTAL_CAPACITY - totalUsed)
+
+# this will consider directories that are at least large enough to free up enough space
+consider(treeRoot, minRequiredSpace, False)
+
+debugValidNodes()
+
+smallestValid = None
+node: DirOrFile
+for node in validNodes.keys():
+    nodeSize = totalForNode(node)
+    
+    if not smallestValid and nodeSize >= minRequiredSpace:
+        smallestValid = node
+    elif nodeSize < minRequiredSpace:
+        continue
+        
+    if nodeSize < totalForNode(smallestValid):
+        smallestValid = node
+        
+print(f'Deleting smallest directory {smallestValid.getPath()} will free up: {totalForNode(smallestValid)}')
