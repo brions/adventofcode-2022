@@ -13,7 +13,7 @@
 #
 # Solution == sum of all the tallest trees that are unique coordinates
 
-from functools import total_ordering, cmp_to_key
+from functools import cmp_to_key
 from enum import Enum
 
 # simple class represting an (x,y) coordinate tuple
