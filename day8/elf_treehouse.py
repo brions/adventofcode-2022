@@ -56,10 +56,9 @@ class Coordinates:
     
     # return true of the other coordinate is adjacent to this one in any direction
     def isAdjacent(self, other: "Coordinates") -> bool:
-        # if the other is the same coordinates, then they're not adjacent
+        # if the other is the same coordinates, then they're "adjacent"
         if other == self:
-            return False
-        
+            return True
         if other[0] == self[0]+1 or other[0] == self[0]-1:
             return True
         if other[1] == self[1]+1 or other[1] == self[1]-1:
@@ -76,7 +75,6 @@ class Coordinates:
 ## DEBUG
 
 # A Python class that represents an individual Tree
-@total_ordering
 class TallTree:
     def __init__(self, height: int, coordinates: Coordinates):
         self.height = height
@@ -88,14 +86,6 @@ class TallTree:
     
     def __repr__(self) -> str:
         return str(self.__str__())
-    
-    def __lt__(self, obj: "TallTree"):
-        if obj == None:
-            return False
-
-    def __gt__(self, obj: "TallTree"):
-        if obj == None:
-            return False
     
     def __eq__(self, obj: "TallTree"):
         if obj == None:
@@ -413,6 +403,7 @@ def lineOfSight(baseTree: TallTree, forest: list, direction: Direction) -> int:
                     # count the same height, but then we're done
                     break
             else:
+                visibleDistance +=1
                 # once we can't see anymore - we're done.
                 break
     elif direction == Direction.DOWN:
@@ -429,6 +420,7 @@ def lineOfSight(baseTree: TallTree, forest: list, direction: Direction) -> int:
                     # count the same height, but then we're done
                     break
             else:
+                visibleDistance +=1
                 # once we can't see anymore - we're done.
                 break
     elif direction == Direction.LEFT:
@@ -445,6 +437,7 @@ def lineOfSight(baseTree: TallTree, forest: list, direction: Direction) -> int:
                     # count the same height, but then we're done
                     break
             else:
+                visibleDistance +=1
                 # once we can't see anymore - we're done.
                 break
     elif direction == Direction.RIGHT:
