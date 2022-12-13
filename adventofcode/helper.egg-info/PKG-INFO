@@ -1,0 +1,10 @@
+Metadata-Version: 1.0
+Name: helper
+Version: 0.1
+Summary: A set of utilities to simplify boilerplate AoC code
+Home-page: https://github.com/brions/adventofcode-2022
+Author: Brion Swanson
+Author-email: brion.swanson@gmail.com
+License: MIT
+Description: UNKNOWN
+Platform: UNKNOWN

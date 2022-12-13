@@ -1,0 +1,9 @@
+LICENSE.txt
+README.rst
+setup.py
+adventofcode/__init__.py
+adventofcode.egg-info/PKG-INFO
+adventofcode.egg-info/SOURCES.txt
+adventofcode.egg-info/dependency_links.txt
+adventofcode.egg-info/not-zip-safe
+adventofcode.egg-info/top_level.txt

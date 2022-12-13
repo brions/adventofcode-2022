@@ -1,0 +1,22 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "adventofcode"
+version = "0.0.1"
+authors = [
+    { name = "Brion Swanson", email="brion.swanson@gmail.com" },
+]
+description = "Boilerplate helper classes for AoC challenges"
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/brions/adventofcode-2022"
+"Bug Tracker" = "https://github.com/brions/adventofcode-2022/issues"

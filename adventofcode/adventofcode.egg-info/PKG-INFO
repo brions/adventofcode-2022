@@ -1,0 +1,13 @@
+Metadata-Version: 2.1
+Name: adventofcode
+Version: 0.1
+Summary: A set of utilities to simplify boilerplate AoC code
+Home-page: https://github.com/brions/adventofcode-2022
+Author: Brion Swanson
+Author-email: brion.swanson@gmail.com
+License: MIT
+Platform: UNKNOWN
+License-File: LICENSE.txt
+
+UNKNOWN
+
