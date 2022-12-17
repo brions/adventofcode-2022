@@ -1,0 +1,39 @@
+(AA) - 0 (DD/II/BB) -> DD
+DD -   20 (CC/AA/EE) -> CC -> BB 
+BB -   13 (CC/AA) -> AA -> II -> JJ
+JJ -   21 (II) -> II -> AA -> DD -> EE -> FF -> GG -> HH
+HH -   22 (GG) -> GG -> FF -> EE
+EE -   3  (FF/DD) -> DD -> CC
+CC -   2  (DD/BB)
+
+(FF) - 0 (EE/GG)
+(GG) - 0 (FF/HH)
+(II) - 0 (AA/JJ)
+
+
+                  AA
+            /     |     \        
+        BB        DD      II       
+          \    /    \     |      
+            (CC)     EE  (JJ)     
+                     |
+                     FF
+                     |
+                     GG
+                     |
+                    (HH)
+
+Algorithm:
+1. Find the non-zero nodes
+2. Calculate the value/step of each non-zero node path
+3. Chose the most valuable* path
+4. Move to the chosen node
+5. Open the valve
+6. Mark node as visited
+7. Repeat from step 1 until all "valuable" nodes are visited
+
+
+* value / steps = value/step - choose the most valuable per step
+ex. 
+
+** track total pressure released for each open node every minute
