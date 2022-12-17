@@ -21,8 +21,6 @@ sensors = set()
 # dictionary of sensor coordinates -> (closest beacon, sensor range)
 sensorMap = dict()
 beacons = set()
-# coverage is a dictionary of: y coord -> set of x coords
-coverage = dict()
 maxValues = {'x': 0, 'y': 0}
 minValues = {'x': 0, 'y': 0}
 
@@ -45,8 +43,31 @@ def isCovered(point: Coordinates) -> bool:
     return False
 
 def renderRow(row: int) -> str:
-    rendered = list()
-    for x in range(minValues['x'], maxValues['x']+1):
+    rendered = [0 for x in range(minValues['x'], maxValues['x'])]
+    pos = minValues['x']
+    while pos < maxValues['x']+1:
+    # try a few things:
+    # 1. is there a sensor in this row?
+    #  a. if so, mark all the points (incl. sensor) as covered from sensor +- range
+    #  b. only consider points not yet rendered from here on
+    # 2. else, find any sensors within range
+    #  a. if found, calculate sensor range coverage of this line
+    #  b. mark all covered points
+    #  c. move to next uncovered pos
+        for sensor in sensors
+            if sensor['y'] == row:
+                range = sensorMap[sensor][1]
+                start = sensor['x']
+                for next in range(start - range, start + range + 1):
+                    rendered[next] = '#' if next != sensor['x'] else 'S'
+        
+        while 0 in rendered:
+            # there are still unrendered positions - choose the first
+            pos = rendered.index(0)
+            # see if there are sensors in range
+            if isCovered(pos):
+                # determine how much that sensor is covering this row
+            
         point = Coordinates(x, row)
         if point in sensors:
             rendered.append('S')
@@ -56,6 +77,8 @@ def renderRow(row: int) -> str:
             rendered.append('#')
         else:
             rendered.append('.')
+        pos += 1
+        
     return "".join(rendered)
 
 def drawMap() -> None:
@@ -195,8 +218,6 @@ def part1(file, args):
     count = len(re.findall('[^\.B]', renderRow(checkRow)))
     print(f'Number of blank spaces in y={checkRow}: {count}')
 
-
-def 
 
 
 def part2(file, args):
