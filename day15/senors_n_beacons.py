@@ -29,78 +29,6 @@ def distanceTo(point1: Coordinates, point2: Coordinates):
     return abs(point1['x'] - point2['x']) + abs(point1['y'] - point2['y'])
 
 
-def isCovered(point: Coordinates) -> bool:
-    # check to see if it's in range of every sensor, not just closest
-    for sensor in sensors:
-        if sensorMap[sensor][1] >= distanceTo(point, sensor):
-            return True
-    # sensorPos, distToSensor = closestTo(point, sensors)
-    # if sensorPos and distToSensor:
-    #     # get the range of this sensor and see if the point is within range
-    #     sensorRange = sensorMap[sensorPos][1]
-    #     return sensorRange >= distToSensor
-    # else:
-    return False
-
-def renderRow(row: int) -> str:
-    rendered = [0 for x in range(minValues['x'], maxValues['x'])]
-    pos = minValues['x']
-    while pos < maxValues['x']+1:
-    # try a few things:
-    # 1. is there a sensor in this row?
-    #  a. if so, mark all the points (incl. sensor) as covered from sensor +- range
-    #  b. only consider points not yet rendered from here on
-    # 2. else, find any sensors within range
-    #  a. if found, calculate sensor range coverage of this line
-    #  b. mark all covered points
-    #  c. move to next uncovered pos
-        for sensor in sensors
-            if sensor['y'] == row:
-                range = sensorMap[sensor][1]
-                start = sensor['x']
-                for next in range(start - range, start + range + 1):
-                    rendered[next] = '#' if next != sensor['x'] else 'S'
-        
-        while 0 in rendered:
-            # there are still unrendered positions - choose the first
-            pos = rendered.index(0)
-            # see if there are sensors in range
-            if isCovered(pos):
-                # determine how much that sensor is covering this row
-            
-        point = Coordinates(x, row)
-        if point in sensors:
-            rendered.append('S')
-        elif point in beacons:
-            rendered.append('B')
-        elif isCovered(point):
-            rendered.append('#')
-        else:
-            rendered.append('.')
-        pos += 1
-        
-    return "".join(rendered)
-
-def drawMap() -> None:
-    for y in range(minValues['y'], maxValues['y']+1):
-        rowStr = renderRow(y)
-        # for x in range(minValues['x'], maxValues['x']+1):
-        #     point = Coordinates(x, y)
-        #     if point in sensors:
-        #         print('S', end='')
-        #     elif point in beacons:
-        #         print('B', end='')
-        #     elif point in coverage:
-        #         print('#', end='')
-        #     else:
-        #         print('.', end='')
-        print(f'{y: ^3} {rowStr}')
-        
-def updateMinMax(index, newMin, newMax) -> None:
-        minValues[index] = newMin if newMin < minValues[index] else minValues[index]
-        maxValues[index] = newMax if newMax > maxValues[index] else maxValues[index]
-
-
 def closestTo(location: Coordinates, domain: set) -> tuple:
     """Determines which of the coordinates in the provide coordinate set
     is closest to the provided location using the Manhattan distance formula
@@ -124,6 +52,123 @@ def closestTo(location: Coordinates, domain: set) -> tuple:
             return None
             
     return (shortestDistance[1], shortestDistance[0]) or None
+
+
+def isCovered(point: Coordinates) -> bool:
+    # check to see if it's in range of every sensor, not just closest
+    for sensor in sensors:
+        if sensorMap[sensor][1] >= distanceTo(point, sensor):
+            return True
+    # sensorPos, distToSensor = closestTo(point, sensors)
+    # if sensorPos and distToSensor:
+    #     # get the range of this sensor and see if the point is within range
+    #     sensorRange = sensorMap[sensorPos][1]
+    #     return sensorRange >= distToSensor
+    # else:
+    return False
+
+def renderRow(row: int) -> str:
+    rendered = [0 for x in range(minValues['x'], maxValues['x'])]
+    pos = None
+    sensorRange = None
+    reconsider = set()
+    unconsidered = set(sensors)
+
+    while unconsidered:
+        sensor = unconsidered.pop()
+        if sensor['y'] == row:
+            # start at this sensor's x coordinate
+            pos = sensor['x']
+            sensorRange = sensorMap[sensor][1]
+            
+            # we have an x position of a sensor and its range - mark the rendered locations
+            for i in range(pos - sensorRange, pos + sensorRange):
+                rendered[i] = '#' if i != pos else 'S'
+        else:
+            reconsider.add(sensor)
+
+    # keep checking until we have accounted for the entire row
+    # find the nearest sensor to the leftmost unrendered point
+    # and calculate its coverage (if any)
+    pos = minValues['x']
+    while 0 in rendered:
+        while rendered[pos] != 0:
+            pos += 1
+            if pos > maxValues['x']:
+                # we're at the end of the row, return
+                return "".join(rendered)
+        if reconsider:
+            distPointTuple = closestTo(Coordinates(pos, row), reconsider)
+            distance = distPointTuple[1]
+            sensor = distPointTuple[0]
+            reconsider.remove(sensor)
+            sensorRange = sensorMap[sensor][1]
+            if sensorRange > distance:
+                # the range covers this row - so figure out how much and render it from this pos
+                coverage = sensorRange - (distance + 1)
+                if coverage > 0:
+                    for i in sensorRange(pos - coverage, pos + coverage):
+                        rendered[i] = '#'
+                    continue
+        rendered[pos] = '.'
+        pos +=1
+                                    
+    # # while pos < maxValues['x']+1:
+    # # # try a few things:
+    # # # 1. is there a sensor in this row?
+    # # #  a. if so, mark all the points (incl. sensor) as covered from sensor +- range
+    # # #  b. only consider points not yet rendered from here on
+    # # # 2. else, find any sensors within range
+    # # #  a. if found, calculate sensor range coverage of this line
+    # # #  b. mark all covered points
+    # # #  c. move to next uncovered pos
+    # #     for sensor in sensors:
+    # #         if sensor['y'] == row:
+    # #             range = sensorMap[sensor][1]
+    # #             start = sensor['x']
+    # #             for next in range(start - range, start + range + 1):
+    # #                 rendered[next] = '#' if next != sensor['x'] else 'S'
+        
+    # #     while 0 in rendered:
+    # #         # there are still unrendered positions - choose the first
+    # #         pos = rendered.index(0)
+    # #         # see if there are sensors in range
+    # #         if isCovered(pos):
+    # #             # determine how much that sensor is covering this row
+            
+    # #     point = Coordinates(x, row)
+    # #     if point in sensors:
+    # #         rendered.append('S')
+    # #     elif point in beacons:
+    # #         rendered.append('B')
+    # #     elif isCovered(point):
+    # #         rendered.append('#')
+    # #     else:
+    # #         rendered.append('.')
+    # #     pos += 1
+        
+    return "".join(rendered)
+
+def drawMap() -> None:
+    for y in range(minValues['y'], maxValues['y']+1):
+        rowStr = renderRow(y)
+        # for x in range(minValues['x'], maxValues['x']+1):
+        #     point = Coordinates(x, y)
+        #     if point in sensors:
+        #         print('S', end='')
+        #     elif point in beacons:
+        #         print('B', end='')
+        #     elif point in coverage:
+        #         print('#', end='')
+        #     else:
+        #         print('.', end='')
+        print(f'{y: ^3} {rowStr}')
+        
+def updateMinMax(index, newMin, newMax) -> None:
+        minValues[index] = newMin if newMin < minValues[index] else minValues[index]
+        maxValues[index] = newMax if newMax > maxValues[index] else maxValues[index]
+
+
 
 
 
@@ -175,9 +220,6 @@ def populateDataSets(file) -> None:
         y2 = int(dataPoints[3])
         sensors.add(Coordinates(x1, y1))
         beacons.add(Coordinates(x2, y2))
-        if not coverage.get(y1):
-            coverage[y1] = set()
-        coverage[y1].add(x1)
         
         xMin = min([x1, x2])
         yMin = min([y1, y2])
