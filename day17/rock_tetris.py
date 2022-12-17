@@ -43,7 +43,7 @@ class Shape:
         
     def intersects(self, shape_coord: Coordinates, shape: ShapeDef) -> bool:
         overlaps = False
-        ## special cases: cross & j-line
+        ## special cases: cross, j-line, and floor
         if shape == ShapeDef.CROSS:
             # detect collisions with anything other than corners
             if shape.shape == ShapeDef.CROSS:
@@ -61,10 +61,20 @@ class Shape:
                 # we hit floor
                 overlaps = True
         else:
-            # detect tl_coord overlaps anywhere on this shape
+            # detect if shape overlaps anywhere on this shape
             if shape == ShapeDef.H_LINE:
                 for y in range(self.tl_coords['y'] - self.height, self.tl_coords['y']):
                     if shape_coord['y'] == y:
+                        overlaps = True
+                        break
+            elif shape == ShapeDef.V_LINE:
+                for x in range(self.tl_coords['x'], self.tl_coords['x'] + self.width):
+                    if shape_coord['x'] + shape.value[0] > x:
+                        # we hit the right wall
+                        overlaps = True
+                        break
+                    elif shape_coord['x'] < x:
+                        # we hit the left wall
                         overlaps = True
                         break
         return overlaps
@@ -107,11 +117,14 @@ SHAPE_DROP_SEQ = [ShapeDef.H_LINE, ShapeDef.CROSS, ShapeDef.J_LINE,
 def part1(lines: list, args: list):
     global stackHeight, floorHeight, landedRocks, SHAPE_DROP_SEQ
     
+    movesLine = lines.pop()
+    movesLineIdx = 0
     maxRockCount = int(args[0]) if args else 2022
     while len(landedRocks) < maxRockCount:
         activeRockShape = SHAPE_DROP_SEQ[len(landedRocks) % len(SHAPE_DROP_SEQ)]
         nextRock: Shape
-        for char in lines.pop(0):            
+        for char in movesLine[movesLineIdx:]:
+            movesLineIdx += 1      
             moveDir = Direction.LEFT if char == '<' else Direction.RIGHT
             # step one: place rock +2 from left, and +3 from stack/floor height 
             # + rock.height (floor height is 0 @ (0,-1))
@@ -133,8 +146,8 @@ def part1(lines: list, args: list):
             previousRockIndex = len(landedRocks) - 1
             while nextRock.moveable:
                 if previousRockIndex >= 0:
-                    if nextRock.intersects(landedRocks(previousRockIndex).tl_coords,
-                                           landedRocks(previousRockIndex).shape):
+                    if nextRock.intersects(landedRocks[previousRockIndex].tl_coords,
+                                           landedRocks[previousRockIndex].shape):
                         nextRock.move(Direction.UP)
                         nextRock.land()
                         landedRocks.append(nextRock)
