@@ -45,7 +45,7 @@ def reset(lines):
     maxDimensions[0] += 1
     maxDimensions[1] += 1
     maxDimensions[2] += 1
-    debug(f'cubeSet: {len(lavaSet)}')
+    debug(f'lavaSet: {len(lavaSet)}')
     
     
 def part1(lines, args):
@@ -70,8 +70,8 @@ def checkPoint(point: Coordinates3D):
 
     for p in [xpos, xneg, ypos, yneg, zpos, zneg]:
         if p['x'] >= minDimension and p['y'] >= minDimension and p['z'] >= minDimension and \
-           p['x'] + 1 < maxDimensions[0] and p['y'] + 1 < maxDimensions[1] and \
-           p['z'] + 1 < maxDimensions[2]:
+           p['x'] <= maxDimensions[0] and p['y'] <= maxDimensions[1] and \
+           p['z'] <= maxDimensions[2]:
             if p not in lavaSet:
                 nextQueue.put(p)
             else:
