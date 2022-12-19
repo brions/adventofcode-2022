@@ -29,7 +29,7 @@ def reset(lines):
     lavaSet.clear()
     nextQueue = Queue()
     
-    for line in list(map(lambda ln: ln.strip(), lines)):
+    for line in lines:
         coords = line.split(',')
         cube = Coordinates3D(int(coords[0]), int(coords[1]), int(coords[2]))
         lavaSet.add(cube)
@@ -116,7 +116,7 @@ def part2(lines, args):
             debug(f'Total exposed lava faces: {totalFaces}')
 
     # done loading cubes and comparing them
-    print(f'Total cubes: {(maxDimensions[0]-minDimension) * (maxDimensions[1]-minDimension) * (maxDimensions[2]-minDimension)}')
+    print(f'Total cubes: {(maxDimensions[0]-minDimension+1) * (maxDimensions[1]-minDimension+1) * (maxDimensions[2]-minDimension+1)}')
     print(f'Total lava cubes: {len(lavaSet)}')
     print(f'Total water cubes: {len(waterSet)}')
     print(f'Total exposed lava faces: {totalFaces}')
