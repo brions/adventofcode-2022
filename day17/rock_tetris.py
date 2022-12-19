@@ -46,12 +46,40 @@ class Shape:
         ## special cases: cross, j-line, and floor
         if shape == ShapeDef.CROSS:
             # detect collisions with anything other than corners
-            if shape.shape == ShapeDef.CROSS:
+            if self.shape == ShapeDef.CROSS:
                 # tricky - check coordinates
-                if shape_coord['y'] == self.tl_coords['y'] + 1 and \
-                   shape_coord['x'] == self.tl_coords['x']:
+                if shape_coord['y'] == self['y'] + 1 and \
+                   shape_coord['x'] == self['x']:
                        pass
-            pass
+            elif self.shape == ShapeDef.J_LINE:
+                pass
+            else:
+                # detect if shape overlaps anywhere on this shape
+                if shape == ShapeDef.H_LINE:
+                    for y in range(self['y'] - self.height, self['y']):
+                        if shape_coord['y'] == y:
+                            overlaps = True
+                            break
+                elif shape == ShapeDef.V_LINE:
+                    for x in range(self['x'], self['x'] + self.width):
+                        if shape_coord['x'] + shape.value[0] > x:
+                            # we hit the right wall
+                            overlaps = True
+                            break
+                        elif shape_coord['x'] < x:
+                            # we hit the left wall
+                            overlaps = True
+                            break
+                else:
+                    # shape = square
+                    for y in range(self['y'] - self.height, self['y']):
+                        for x in range(self['x'] - self.width, self['x']):
+                            if shape_coord['y'] == y or shape_coord['x'] == x:
+                                overlaps = True
+                                break
+                        if overlaps:
+                            break
+                
         elif shape == ShapeDef.J_LINE:
             # detect collisions with tl square
             pass
@@ -110,70 +138,75 @@ SHAPE_DROP_SEQ = [ShapeDef.H_LINE, ShapeDef.CROSS, ShapeDef.J_LINE,
 # Main execution
 #####
 
-
-
-
-
 def part1(lines: list, args: list):
     global stackHeight, floorHeight, landedRocks, SHAPE_DROP_SEQ
     
     movesLine = lines.pop()
     movesLineIdx = 0
     maxRockCount = int(args[0]) if args else 2022
+    lastLandedLength = len(landedRocks)
     while len(landedRocks) < maxRockCount:
+        lastLandedLength = len(landedRocks)
         activeRockShape = SHAPE_DROP_SEQ[len(landedRocks) % len(SHAPE_DROP_SEQ)]
-        nextRock: Shape
-        for char in movesLine[movesLineIdx:]:
-            movesLineIdx += 1      
-            moveDir = Direction.LEFT if char == '<' else Direction.RIGHT
-            # step one: place rock +2 from left, and +3 from stack/floor height 
-            # + rock.height (floor height is 0 @ (0,-1))
-            nextRock = Shape(activeRockShape, Coordinates(2, stackHeight + 2 + 
-                                                          activeRockShape.value[1]))
-            
-            # step two: move the rock in moveDir (if we can)
-            nextRock.move(moveDir)
-            # make sure we didn't move past either edge
-            if nextRock.intersects(Coordinates(6,nextRock['y']), ShapeDef.V_LINE):
-                nextRock.move(Direction.LEFT)
-            elif nextRock.intersects(Coordinates(0, nextRock['y']), ShapeDef.V_LINE):
-                nextRock.move(Direction.RIGHT)
-            
-            # step three: move the rock down
-            nextRock.move(Direction.DOWN)
-            
-            # step test for collision with previous rock(s)/floor
-            previousRockIndex = len(landedRocks) - 1
-            while nextRock.moveable:
-                if previousRockIndex >= 0:
-                    if nextRock.intersects(landedRocks[previousRockIndex].tl_coords,
-                                           landedRocks[previousRockIndex].shape):
-                        nextRock.move(Direction.UP)
-                        nextRock.land()
-                        landedRocks.append(nextRock)
-                        # move up the "floor" height to the top of the highest rock
-                        if nextRock.tl_coords['y'] > stackHeight:
-                            stackHeight = nextRock.tl_coords['y']
-                        break
-                    previousRockIndex -= 1
-                else:
-                    # we ran out of rocks to compare against, 
-                    # check for hitting the floor
-                    if nextRock.intersects(Coordinates(0,0), ShapeDef.FLOOR):
-                        nextRock.move(Direction.UP)
-                        nextRock.land()
-                        landedRocks.append(nextRock)
-                        # move up the "floor" height to the top of the highest rock
-                        if nextRock.tl_coords['y'] > stackHeight:
-                            stackHeight = nextRock.tl_coords['y']
-                        break
+        nextRock: Shape = None
+        while nextRock is None or nextRock.moveable:
+            movesLineIdx = 0
+            for char in movesLine[movesLineIdx:]:
+                movesLineIdx += 1      
+                moveDir = Direction.LEFT if char == '<' else Direction.RIGHT
+                # step one: place rock +2 from left, and +3 from stack/floor height 
+                # + rock.height (floor height is 0 @ (0,-1))
+                nextRock = Shape(activeRockShape, Coordinates(2, stackHeight + 2 + 
+                                                            activeRockShape.value[1]))
+                
+                # step two: move the rock in moveDir (if we can)
+                nextRock.move(moveDir)
+                # make sure we didn't move past either edge
+                if nextRock.intersects(Coordinates(6,nextRock['y']), ShapeDef.V_LINE):
+                    nextRock.move(Direction.LEFT)
+                elif nextRock.intersects(Coordinates(0, nextRock['y']), ShapeDef.V_LINE):
+                    nextRock.move(Direction.RIGHT)
+                
+                # step three: move the rock down
+                nextRock.move(Direction.DOWN)
+                
+                # step test for collision with previous rock(s)/floor
+                previousRockIndex = len(landedRocks) - 1
+                while nextRock.moveable:
+                    if previousRockIndex >= 0:
+                        if nextRock.intersects(landedRocks[previousRockIndex].tl_coords,
+                                            landedRocks[previousRockIndex].shape):
+                            nextRock.move(Direction.UP)
+                            nextRock.land()
+                            landedRocks.append(nextRock)
+                            # move up the "floor" height to the top of the highest rock
+                            if nextRock.tl_coords['y'] > stackHeight:
+                                stackHeight = nextRock.tl_coords['y']
+                            break
+                        previousRockIndex -= 1
+                    else:
+                        # we ran out of rocks to compare against, 
+                        # check for hitting the floor
+                        if nextRock.intersects(Coordinates(0,0), ShapeDef.FLOOR):
+                            nextRock.move(Direction.UP)
+                            nextRock.land()
+                            landedRocks.append(nextRock)
+                            # move up the "floor" height to the top of the highest rock
+                            if nextRock.tl_coords['y'] > stackHeight:
+                                stackHeight = nextRock.tl_coords['y']
+                            break
 
-                # didn't hit anything, move down again
-                nextRock.move(Direction.DOWN)            
+                    # didn't hit anything, move down again
+                    nextRock.move(Direction.DOWN)            
 
-            # make sure we haven't landed
-            if not nextRock.moveable:
-                break
+                # make sure we haven't landed
+                if not nextRock.moveable:
+                    break
+        print(f'stackHeight: {stackHeight}, landedRocks: {len(landedRocks)}, lastShape: {nextRock.shape}') if \
+            len(landedRocks) % 10 == 0 or len(landedRocks) == maxRockCount else None
+        if lastLandedLength == len(landedRocks):
+            print(f'We broke out of the loop without landing, abort.')
+            break
         
 
 
