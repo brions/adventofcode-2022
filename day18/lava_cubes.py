@@ -78,57 +78,6 @@ def checkPoint(point: Coordinates3D):
                 totalFaces += 1
         
 
-def checkX(point: Coordinates3D):
-    global nextQueue, lavaSet, totalFaces
-
-    pointEdge = Coordinates3D(point['x'] + 1, point['y'], point['z'])
-    if point['x'] >= minDimension and point['x'] + 1 < maxDimensions[0] + 1:
-        if pointEdge not in lavaSet:
-            nextQueue.put(pointEdge)
-        else:
-            totalFaces += 1
-    pointEdge = Coordinates3D(point['x'] - 1, point['y'], point['z'])
-    if point['x'] - 1 >= minDimension and point['x'] < maxDimensions[0] + 1:
-        if pointEdge not in lavaSet:
-            nextQueue.put(pointEdge)
-        else:
-            totalFaces += 1    
-
-
-def checkY(point: Coordinates3D):
-    global nextQueue, lavaSet, totalFaces
-
-    pointEdge = Coordinates3D(point['x'], point['y'] + 1, point['z'])
-    if pointEdge['y'] >= minDimension and pointEdge['y'] < maxDimensions[0] + 1:
-        if pointEdge not in lavaSet:
-            nextQueue.put(pointEdge)
-        else:
-            totalFaces += 1
-    pointEdge = Coordinates3D(point['x'], point['y'] - 1, point['z'])
-    if pointEdge['y'] >= minDimension and pointEdge['y'] < maxDimensions[0] + 1:
-        if pointEdge not in lavaSet:
-            nextQueue.put(pointEdge)
-        else:
-            totalFaces += 1    
-
-
-def checkZ(point: Coordinates3D):
-    global nextQueue, lavaSet, totalFaces
-
-    pointEdge = Coordinates3D(point['x'], point['y'], point['z'] - 1)
-    if point['z'] >= minDimension and point['z'] < maxDimensions[0] + 1:
-        if pointEdge not in lavaSet:
-            nextQueue.put(pointEdge)
-        else:
-            totalFaces += 1
-    pointEdge = Coordinates3D(point['x'], point['y'], point['z'] + 1)
-    if point['z'] >= minDimension and point['z'] < maxDimensions[0]:
-        if pointEdge not in lavaSet:
-            nextQueue.put(pointEdge)
-        else:
-            totalFaces += 1    
-
-
 def part2(lines, args):
     global lavaSet, totalFaces
     reset(lines)
