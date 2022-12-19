@@ -1,5 +1,6 @@
 import getopt
 import sys
+import traceback
 from io import TextIOWrapper
 from enum import Enum
 from functools import total_ordering
@@ -401,6 +402,7 @@ def runLines(executeParts, partsMap, lines, args) -> None:
             partsMap[part](lines, args)
         except KeyError as e:
             error(f'part {part} not found ({e})')
+            traceback.print_exc()
 
 
 # given a list of parts to execute and the mapping of those part names to
