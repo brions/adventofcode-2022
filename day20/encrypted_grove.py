@@ -1,15 +1,4 @@
-from helpers import parseAndLoad, readLines, runLines, debug, getLogLevel, LogLevel
-
-###
-# Objects
-#####
-
-
-###
-# Globals
-#####
-
-
+from helpers import parseAndLoad, readLines, runLines, debug
 
 ###
 # Main execution
@@ -27,11 +16,11 @@ def part1(lines, args):
         debug(f'moving orig. index {idx} ({sequence[idx]}) from working copy idx {workingCopyOldIdx}')
         nextIdx = workingCopyOldIdx + sequence[idx]
         debug(f'new index for value in working copy: {nextIdx}')
-        if nextIdx > sequenceLength - 1:
+        if nextIdx > sequenceLength:
             overlap = nextIdx % sequenceLength + 1
             nextIdx = overlap
         elif nextIdx <= 0:
-            wrappedIdx = nextIdx % sequenceLength - 1
+            wrappedIdx = sequenceLength - abs(nextIdx - 1)
             nextIdx = wrappedIdx
         debug(f'new index for value in working copy (adjusted): {nextIdx}')
         value = sequence[idx]
